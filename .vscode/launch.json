@@ -26,15 +26,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug example 'i2cscan'",
+            "name": "Debug example 'lux'",
             "cargo": {
                 "args": [
                     "build",
-                    "--example=i2cscan",
+                    "--example=lux",
                     "--package=opt4048"
                 ],
                 "filter": {
-                    "name": "i2cscan",
+                    "name": "lux",
                     "kind": "example"
                 }
             },
@@ -44,16 +44,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in example 'i2cscan'",
+            "name": "Debug unit tests in example 'lux'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--example=i2cscan",
+                    "--example=lux",
                     "--package=opt4048"
                 ],
                 "filter": {
-                    "name": "i2cscan",
+                    "name": "lux",
                     "kind": "example"
                 }
             },
