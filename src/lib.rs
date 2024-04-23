@@ -2,6 +2,8 @@
 
 use embedded_hal::i2c;
 
+mod convert;
+
 const I2C_ADDRESS: u8 = 0x44;
 
 #[repr(u8)]
@@ -34,18 +36,6 @@ const OPT4048_REGISTER_FLAGS: u8 = 0x0C;
 const OPT4048_REGISTER_DEVICE_ID: u8 = 0x11;
 */
 
-// CIE Matrix
-const M0X: f32 = 0.000234892992;
-const M0Y: f32 = 0.0000407467441;
-const M0Z: f32 = 0.0000928619404;
-const M1X: f32 = -0.0000189652390;
-const M1Y: f32 = 0.000198958202;
-const M1Z: f32 = -0.0000169739553;
-const M2X: f32 = 0.0000120811684;
-const M2Y: f32 = -0.0000158848115;
-const M2Z: f32 = 0.000674021520;
-const M1L: f32 = 0.00215; //lux
-
 pub struct OPT4048<I2C> {
     i2c: I2C,
 }
@@ -55,7 +45,7 @@ pub enum OPT4048Error<E> {
     I2C(E),
 }
 
-struct ADCCodes {
+pub struct ADCCodes {
     ch0: u32,
     ch1: u32,
     ch2: u32,
@@ -63,7 +53,7 @@ struct ADCCodes {
 }
 
 impl ADCCodes {
-    fn new(ch0: u32, ch1: u32, ch2: u32, ch3: u32) -> Self {
+    pub fn new(ch0: u32, ch1: u32, ch2: u32, ch3: u32) -> Self {
         Self { ch0, ch1, ch2, ch3 }
     }
 }
@@ -113,13 +103,10 @@ where
         Ok(adc_code)
     }
 
-    fn read_all_channels(
-        &mut self,
-        register: RegisterMap,
-    ) -> Result<ADCCodes, OPT4048Error<I2C::Error>> {
+    fn read_all_channels(&mut self) -> Result<ADCCodes, OPT4048Error<I2C::Error>> {
         let mut block = [0u8; 16];
         self.i2c
-            .write_read(I2C_ADDRESS, &[register as u8], &mut block)
+            .write_read(I2C_ADDRESS, &[RegisterMap::Channel0 as u8], &mut block)
             .map_err(OPT4048Error::I2C)?;
         let adc_ch0 = self.adc([block[0], block[1], block[2], block[3]]);
         let adc_ch1 = self.adc([block[4], block[5], block[6], block[7]]);
@@ -137,7 +124,12 @@ where
 
     // XYZ are not scaled, the values comes from applying CIE matrix to
     // adc codes
-    pub fn read_XYZ_Unscaled() {}
+
+    #[allow(non_snake_case)]
+    pub fn read_XYZ_unscaled(&mut self) -> Result<ADCCodes, OPT4048Error<I2C::Error>> {
+        let adc_codes = self.read_all_channels()?;
+        Ok(adc_codes)
+    }
 
     pub fn read_lux(&mut self) -> Result<f32, OPT4048Error<I2C::Error>> {
         /*
@@ -153,7 +145,7 @@ where
         let adc_ch1 = mantissa_ch1 << exponent_ch1;
         */
         let adc_ch1 = self.read_channel(RegisterMap::Channel1)?;
-        let lux = adc_ch1 as f32 * M1L;
+        let lux = convert::convert_channel1_to_lux(adc_ch1);
         Ok(lux)
     }
 }
