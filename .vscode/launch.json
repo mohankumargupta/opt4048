@@ -44,6 +44,24 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug example 'ciexy'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=ciexy",
+                    "--package=opt4048"
+                ],
+                "filter": {
+                    "name": "ciexy",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug unit tests in example 'lux'",
             "cargo": {
                 "args": [
@@ -59,6 +77,6 @@
             },
             "args": [],
             "cwd": "${workspaceFolder}"
-        }
+        },
     ]
 }

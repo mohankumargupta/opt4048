@@ -10,7 +10,7 @@ const M2Y: f32 = -0.0000158848115;
 const M2Z: f32 = 0.000674021520;
 const M1L: f32 = 0.00215; //lux
 
-use crate::ADCCodes;
+use crate::{ADCCodes, CIExy};
 
 pub(crate) fn convert_raw_to_adc(block: [u8; 4]) -> u32 {
     let exponent = (block[0] & 0xF0) >> 4;
@@ -39,8 +39,22 @@ pub(crate) fn convert_channel1_to_lux(adc: u32) -> f32 {
     adc as f32 * M1L
 }
 
+/*
 pub(crate) fn convert_adc_to_lux(adc: ADCCodes) -> f32 {
     adc.ch1 as f32 * M1L
+}
+*/
+
+#[allow(non_snake_case)]
+pub(crate) fn convert_adc_to_cie_xy(adc: ADCCodes) -> CIExy {
+    let X = convert_adc_to_X(&adc);
+    let Y = convert_adc_to_Y(&adc);
+    let Z = convert_adc_to_Z(&adc);
+    let total = X + Y + Z;
+    CIExy {
+        x: X / total,
+        y: Y / total,
+    }
 }
 
 #[cfg(test)]

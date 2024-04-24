@@ -18,24 +18,6 @@ pub enum RegisterMap {
     DeviceID = 0x11,
 }
 
-/*
-const OPT4048_REGISTER_CHANNEL0: u8 = 0x00;
-const OPT4048_REGISTER_CHANNEL0_EXTRA: u8 = 0x01;
-const OPT4048_REGISTER_CHANNEL1: u8 = 0x02;
-const OPT4048_REGISTER_CHANNEL1_EXTRA: u8 = 0x03;
-const OPT4048_REGISTER_CHANNEL2: u8 = 0x04;
-const OPT4048_REGISTER_CHANNEL2_EXTRA: u8 = 0x05;
-const OPT4048_REGISTER_CHANNEL3: u8 = 0x06;
-const OPT4048_REGISTER_CHANNEL3_EXTRA: u8 = 0x07;
-const OPT4048_REGISTER_THRESHOLD_LOW: u8 = 0x08;
-const OPT4048_REGISTER_THRESHOLD_HIGH: u8 = 0x09;
-const OPT4048_REGISTER_CONTROLA: u8 = 0x0A;
-const OPT4048_REGISTER_CONTROLB: u8 = 0x0B;
-const OPT4048_REGISTER_FLAGS: u8 = 0x0C;
-
-const OPT4048_REGISTER_DEVICE_ID: u8 = 0x11;
-*/
-
 pub struct OPT4048<I2C> {
     i2c: I2C,
 }
@@ -45,6 +27,7 @@ pub enum OPT4048Error<E> {
     I2C(E),
 }
 
+#[derive(Copy, Clone)]
 pub struct ADCCodes {
     ch0: u32,
     ch1: u32,
@@ -70,10 +53,9 @@ impl XYZ {
     }
 }
 
-pub struct CIExyz {
-    x: f32,
-    y: f32,
-    z: f32,
+pub struct CIExy {
+    pub x: f32,
+    pub y: f32,
 }
 
 impl<I2C> OPT4048<I2C>
@@ -116,8 +98,10 @@ where
     // We these ones, XYZ are scaled so that Y=lux
     pub fn read_XYZ() {}
     pub fn read_XYZ_Lux() {}
-    pub fn read_CIExy() {}
-    pub fn read_CIExyz() {}
+    pub fn read_cie_xy(&mut self) -> Result<CIExy, OPT4048Error<I2C::Error>> {
+        let adc = self.read_all_channels()?;
+        Ok(convert::convert_adc_to_cie_xy(adc))
+    }
     pub fn read_CIExyz_Lux() {}
 
     // XYZ are not scaled, the values comes from applying CIE matrix to
