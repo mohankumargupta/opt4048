@@ -1,8 +1,8 @@
 use std::time::Duration;
 
 use hal::nb::block;
+use hal::CountDown;
 use hal::I2cdev;
-use hal::{CountDown, SysTimer};
 use linux_embedded_hal as hal;
 use opt4048::OPT4048;
 

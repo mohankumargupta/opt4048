@@ -64,6 +64,12 @@ pub struct XYZ {
     z: f32,
 }
 
+impl XYZ {
+    pub fn new(x: f32, y: f32, z: f32) -> Self {
+        Self { x, y, z }
+    }
+}
+
 pub struct CIExyz {
     x: f32,
     y: f32,
@@ -86,20 +92,12 @@ where
         Ok(id)
     }
 
-    fn adc(&mut self, block: [u8; 4]) -> u32 {
-        let exponent = (block[0] & 0xF0) >> 4;
-        let result_msb = ((block[0] & 0x0F) as u16) << 8 | (block[1] as u16);
-        let result_lsb = block[2] as u16;
-        let mantissa: u32 = result_msb as u32 * 256 + result_lsb as u32;
-        mantissa << exponent
-    }
-
     fn read_channel(&mut self, register: RegisterMap) -> Result<u32, OPT4048Error<I2C::Error>> {
         let mut block = [0u8; 4];
         self.i2c
             .write_read(I2C_ADDRESS, &[register as u8], &mut block)
             .map_err(OPT4048Error::I2C)?;
-        let adc_code = self.adc(block);
+        let adc_code = convert::convert_raw_to_adc(block);
         Ok(adc_code)
     }
 
@@ -108,10 +106,10 @@ where
         self.i2c
             .write_read(I2C_ADDRESS, &[RegisterMap::Channel0 as u8], &mut block)
             .map_err(OPT4048Error::I2C)?;
-        let adc_ch0 = self.adc([block[0], block[1], block[2], block[3]]);
-        let adc_ch1 = self.adc([block[4], block[5], block[6], block[7]]);
-        let adc_ch2 = self.adc([block[8], block[9], block[10], block[11]]);
-        let adc_ch3 = self.adc([block[12], block[13], block[14], block[15]]);
+        let adc_ch0 = convert::convert_raw_to_adc([block[0], block[1], block[2], block[3]]);
+        let adc_ch1 = convert::convert_raw_to_adc([block[4], block[5], block[6], block[7]]);
+        let adc_ch2 = convert::convert_raw_to_adc([block[8], block[9], block[10], block[11]]);
+        let adc_ch3 = convert::convert_raw_to_adc([block[12], block[13], block[14], block[15]]);
         Ok(ADCCodes::new(adc_ch0, adc_ch1, adc_ch2, adc_ch3))
     }
 
@@ -126,24 +124,15 @@ where
     // adc codes
 
     #[allow(non_snake_case)]
-    pub fn read_XYZ_unscaled(&mut self) -> Result<ADCCodes, OPT4048Error<I2C::Error>> {
+    pub fn read_XYZ_unscaled(&mut self) -> Result<XYZ, OPT4048Error<I2C::Error>> {
         let adc_codes = self.read_all_channels()?;
-        Ok(adc_codes)
+        let X = convert::convert_adc_to_X(&adc_codes);
+        let Y = convert::convert_adc_to_Y(&adc_codes);
+        let Z = convert::convert_adc_to_Z(&adc_codes);
+        Ok(XYZ::new(X, Y, Z))
     }
 
     pub fn read_lux(&mut self) -> Result<f32, OPT4048Error<I2C::Error>> {
-        /*
-        let mut block = [0u8; 4];
-        self.i2c
-            .write_read(I2C_ADDRESS, &[OPT4048_REGISTER_CHANNEL1], &mut block)
-            .map_err(OPT4048Error::I2C)?;
-
-        let exponent_ch1 = (block[0] & 0xF0) >> 4;
-        let result_msb_ch1 = ((block[0] & 0x0F) as u16) << 8 | (block[1] as u16);
-        let result_lsb_ch1 = block[2] as u16;
-        let mantissa_ch1: u32 = result_msb_ch1 as u32 * 256 + result_lsb_ch1 as u32;
-        let adc_ch1 = mantissa_ch1 << exponent_ch1;
-        */
         let adc_ch1 = self.read_channel(RegisterMap::Channel1)?;
         let lux = convert::convert_channel1_to_lux(adc_ch1);
         Ok(lux)
