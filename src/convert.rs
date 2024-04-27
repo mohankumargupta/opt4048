@@ -99,6 +99,10 @@ mod tests {
         assert_eq!(15.39f32, (X * 100.0).round() / 100.0);
         assert_eq!(16.44f32, (Y * 100.0).round() / 100.0);
         assert_eq!(13.82f32, (Z * 100.0).round() / 100.0);
+
+        let ciexy = convert_adc_to_cie_xy(adc);
+        assert_eq!(0.337, (ciexy.x * 1000.0).round() / 1000.0);
+        assert_eq!(0.360, (ciexy.y * 1000.0).round() / 1000.0);
     }
 }
 
